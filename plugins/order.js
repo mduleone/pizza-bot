@@ -18,8 +18,34 @@ function setUpConvo(err, convo) {
       })
   }, {}, 'thread_2')
   convo.addMessage(`Here you go! These are the nearby stores \r\n {{ vars.response }}`, 'thread_3')
-  
-  convo.activate()
+
+    convo.addQuestion({text: 'Which store id do you want me to get details on? '},function(res, convo) {
+        // name has been collected...
+        convo.gotoThread('completed');
+    },{key: 'storeId'},'thread_3');
+
+    convo.beforeThread('completed', function(convo, next) {
+
+        const storeId = convo.extractResponse('storeId');
+
+        const myStore = new pizzapi.Store({ID: storeId});
+
+        myStore.getInfo((storeData) => {
+            if (storeData.success) {
+                convo.setVar('results', storeData);
+                next();
+            } else {
+                convo.gotoThread('error');
+                next();
+            }
+        })
+    });
+
+    convo.addMessage({text: 'I saved store {{vars.storeId}} to the database'},'completed');
+
+    convo.addMessage({text: 'Oh no I had an error!'},'error');
+
+    convo.activate()
   convo.gotoThread('thread_1')
 
 }
